@@ -2,272 +2,238 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Video Frame Extractor Pro | Corregido</title>
+    <title>Video Cropper Pro | 20 Frames/Min</title>
     <style>
-        * { box-sizing: border-box; }
-        body { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); font-family: 'Segoe UI', sans-serif; padding: 20px; min-height: 100vh; margin: 0; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 850px) { .content { grid-template-columns: 1fr; } }
-        .panel { background: #f8f9fa; border-radius: 15px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .video-wrapper { position: relative; background: #000; border-radius: 10px; overflow: hidden; cursor: crosshair; }
-        video { width: 100%; display: block; }
-        .crop-overlay { position: absolute; border: 2px solid #ff6b6b; background: rgba(255, 107, 107, 0.2); pointer-events: none; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); }
-        .time-controls { background: white; padding: 15px; border-radius: 10px; margin-top: 15px; border: 1px solid #ddd; }
-        input[type="range"] { width: 100%; margin: 10px 0; }
-        button { background: #667eea; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; margin: 5px; transition: 0.2s; }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        .progress-bar { width: 100%; height: 20px; background: #eee; border-radius: 10px; overflow: hidden; margin: 15px 0; }
-        .progress-fill { height: 100%; background: #4caf50; width: 0%; transition: width 0.2s; text-align: center; color: white; font-size: 12px; line-height: 20px; }
-        .log-console { background: #1e1e2f; color: #4f4; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 8px; height: 150px; overflow-y: auto; margin-top: 10px; }
-        .frame-preview { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; max-height: 300px; overflow-y: auto; }
-        .frame-item img { width: 100%; border-radius: 5px; border: 1px solid #ddd; }
-        .frame-time { font-size: 10px; text-align: center; color: #666; }
+        :root { --primary: #6366f1; --bg: #0f172a; --accent: #10b981; }
+        body { background-color: var(--bg); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 20px; }
+        .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; max-width: 1400px; margin: 0 auto; }
+        
+        /* Área del Video */
+        .video-container { position: relative; background: #000; border-radius: 12px; overflow: hidden; cursor: crosshair; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        video { width: 100%; height: auto; display: block; }
+        .selection-box { 
+            position: absolute; border: 2px dashed #fff; background: rgba(99, 102, 241, 0.3); 
+            pointer-events: none; display: none; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
+        }
+
+        /* Controles */
+        .controls { background: #1e293b; padding: 25px; border-radius: 12px; display: flex; flex-direction: column; gap: 15px; border: 1px solid #334155; }
+        .time-range { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; }
+        .time-range label { font-size: 12px; color: #94a3b8; display: block; margin-bottom: 5px; }
+        input[type="range"] { width: 100%; margin-bottom: 10px; accent-color: var(--primary); }
+        input[type="file"] { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: white; box-sizing: border-box; }
+
+        button { 
+            background: var(--primary); color: white; border: none; padding: 14px; 
+            border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        button:disabled { background: #475569; cursor: not-allowed; opacity: 0.6; }
+
+        .log { background: #000; font-family: monospace; font-size: 11px; padding: 10px; height: 100px; overflow-y: auto; color: var(--accent); border-radius: 6px; border: 1px solid #334155; }
+        .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 5px; margin-top: 10px; max-height: 200px; overflow-y: auto; }
+        .preview-grid img { width: 100%; border-radius: 4px; }
+        .time-display { font-weight: bold; color: var(--accent); float: right; }
+        .info-badge { font-size: 11px; background: #334155; padding: 4px 8px; border-radius: 4px; color: #cbd5e1; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h2>🎬 Extractor de Fotogramas</h2>
-        <p>25 frames por minuto | Recorte espacial activado</p>
+<div class="main-grid">
+    <div class="left-panel">
+        <div class="video-container" id="container">
+            <video id="v" controls crossorigin="anonymous"></video>
+            <div id="box" class="selection-box"></div>
+        </div>
+        <p style="color: #94a3b8; font-size: 13px; margin-top: 10px;">
+            ✂️ <b>Recorte:</b> Haz clic y arrastra sobre el video para seleccionar el área.
+        </p>
     </div>
 
-    <div class="content">
-        <div class="panel">
-            <input type="file" id="videoFile" accept="video/*" style="margin-bottom:15px; width:100%;">
-            <div class="video-wrapper" id="videoWrapper">
-                <video id="sourceVideo" controls crossorigin="anonymous"></video>
-                <div id="cropBox" class="crop-overlay" style="display: none;"></div>
-            </div>
-            <div id="cropInfo" style="font-size:12px; margin-top:10px; color:#555;">✂️ Sin recorte</div>
+    <div class="controls">
+        <h3 style="margin:0">Configuración de Extracción</h3>
+        <input type="file" id="f" accept="video/*">
+        
+        <div class="time-range">
+            <label>Desde el segundo: <span id="t1_val" class="time-display">0.0s</span></label>
+            <input type="range" id="t1" value="0" step="0.1">
             
-            <div class="time-controls">
-                <label>Inicio: <span id="startTime">0s</span></label>
-                <input type="range" id="startSlider" value="0" step="0.1">
-                <label>Fin: <span id="endTime">0s</span></label>
-                <input type="range" id="endSlider" value="100" step="0.1">
-            </div>
+            <label>Hasta el segundo: <span id="t2_val" class="time-display">0.0s</span></label>
+            <input type="range" id="t2" value="0" step="0.1">
         </div>
 
-        <div class="panel">
-            <button id="extractBtn" style="background:#4caf50;">🚀 Iniciar Extracción</button>
-            <button id="clearCropBtn" style="background:#f44336;">🗑️ Limpiar Área</button>
-            <button id="downloadZipBtn" disabled style="background:#2196f3;">📦 Descargar ZIP</button>
+        <div class="info-badge" id="frameInfo">Frecuencia: 20 frames por minuto</div>
 
-            <div class="progress-bar">
-                <div id="progressFill" class="progress-fill">0%</div>
-            </div>
-
-            <div class="log-console" id="logConsole"></div>
-            
-            <div class="frame-preview" id="framePreview"></div>
-        </div>
+        <button id="run">🚀 INICIAR RECORTE</button>
+        <button id="zip" disabled style="background:#0ea5e9">📦 DESCARGAR ZIP</button>
+        
+        <div id="prog" style="font-size:14px; text-align:center; color: var(--accent);">Esperando video...</div>
+        <div class="log" id="l"></div>
+        <div class="preview-grid" id="pv"></div>
     </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-    const videoFile = document.getElementById('videoFile');
-    const sourceVideo = document.getElementById('sourceVideo');
-    const startSlider = document.getElementById('startSlider');
-    const endSlider = document.getElementById('endSlider');
-    const cropBox = document.getElementById('cropBox');
-    const videoWrapper = document.getElementById('videoWrapper');
-    const logConsole = document.getElementById('logConsole');
-    const progressFill = document.getElementById('progressFill');
-    const framePreview = document.getElementById('framePreview');
-    const extractBtn = document.getElementById('extractBtn');
-    const downloadZipBtn = document.getElementById('downloadZipBtn');
-
-    let cropRect = null;
-    let isDragging = false;
-    let startPoint = { x: 0, y: 0 };
-    let frameBlobs = [];
+    const $ = id => document.getElementById(id);
+    let rect = null, isDown = false, startPos = {x:0, y:0}, blobs = [];
 
     // --- CARGA DE VIDEO ---
-    videoFile.onchange = (e) => {
+    $('f').onchange = e => {
         const file = e.target.files[0];
-        if (file) {
-            sourceVideo.src = URL.createObjectURL(file);
+        if(file) {
+            $('v').src = URL.createObjectURL(file);
             addLog("Video cargado correctamente.");
         }
     };
 
-    sourceVideo.onloadedmetadata = () => {
-        startSlider.max = sourceVideo.duration;
-        endSlider.max = sourceVideo.duration;
-        endSlider.value = sourceVideo.duration;
-        updateTimeLabels();
+    $('v').onloadedmetadata = () => {
+        const dur = $('v').duration;
+        $('t1').max = dur;
+        $('t2').max = dur;
+        $('t2').value = dur;
+        updateLabels();
+        $('prog').innerText = "Listo para procesar";
     };
 
-    // --- RECORTE ESPACIAL ---
-    videoWrapper.onmousedown = (e) => {
-        isDragging = true;
-        const rect = videoWrapper.getBoundingClientRect();
-        startPoint = { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height };
-        cropRect = { x: startPoint.x, y: startPoint.y, w: 0, h: 0 };
-    };
-
-    window.onmousemove = (e) => {
-        if (!isDragging) return;
-        const rect = videoWrapper.getBoundingClientRect();
-        let curX = (e.clientX - rect.left) / rect.width;
-        let curY = (e.clientY - rect.top) / rect.height;
+    const updateLabels = () => {
+        const start = parseFloat($('t1').value);
+        const end = parseFloat($('t2').value);
+        $('t1_val').innerText = start.toFixed(1) + "s";
+        $('t2_val').innerText = end.toFixed(1) + "s";
         
-        cropRect.x = Math.min(startPoint.x, curX);
-        cropRect.y = Math.min(startPoint.y, curY);
-        cropRect.w = Math.abs(curX - startPoint.x);
-        cropRect.h = Math.abs(curY - startPoint.y);
+        if(start > end) {
+            $('t2').value = start;
+            $('t2_val').innerText = start.toFixed(1) + "s";
+        }
 
-        cropBox.style.display = 'block';
-        cropBox.style.left = cropRect.x * 100 + '%';
-        cropBox.style.top = cropRect.y * 100 + '%';
-        cropBox.style.width = cropRect.w * 100 + '%';
-        cropBox.style.height = cropRect.h * 100 + '%';
+        // Cálculo informativo de cuántos frames saldrán
+        const diffMin = (parseFloat($('t2').value) - start) / 60;
+        const estimated = Math.max(1, Math.floor(diffMin * 20));
+        $('frameInfo').innerText = `Frecuencia: 20 fpm | Total estimado: ${estimated} capturas`;
     };
 
-    window.onmouseup = () => isDragging = false;
+    $('t1').oninput = updateLabels;
+    $('t2').oninput = updateLabels;
 
-    document.getElementById('clearCropBtn').onclick = () => {
-        cropRect = null;
-        cropBox.style.display = 'none';
-        addLog("Área de recorte eliminada.");
+    // --- SELECCIÓN DE ÁREA (CROP) ---
+    $('container').onmousedown = e => {
+        isDown = true;
+        const b = $('container').getBoundingClientRect();
+        startPos = { x: (e.clientX - b.left) / b.width, y: (e.clientY - b.top) / b.height };
+        rect = { x: startPos.x, y: startPos.y, w: 0, h: 0 };
     };
 
-    // --- EXTRACCIÓN ---
-    async function captureFrame(video, time, rect) {
-    return new Promise((resolve) => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d', { alpha: false });
-        
-        const onSeeked = () => {
-            video.removeEventListener('seeked', onSeeked);
+    window.onmousemove = e => {
+        if(!isDown) return;
+        const b = $('container').getBoundingClientRect();
+        let curX = (e.clientX - b.left) / b.width;
+        let curY = (e.clientY - b.top) / b.height;
+
+        rect.x = Math.max(0, Math.min(startPos.x, curX));
+        rect.y = Math.max(0, Math.min(startPos.y, curY));
+        rect.w = Math.min(1 - rect.x, Math.abs(curX - startPos.x));
+        rect.h = Math.min(1 - rect.y, Math.abs(curY - startPos.y));
+
+        $('box').style.display = 'block';
+        $('box').style.left = (rect.x * 100) + '%';
+        $('box').style.top = (rect.y * 100) + '%';
+        $('box').style.width = (rect.w * 100) + '%';
+        $('box').style.height = (rect.h * 100) + '%';
+    };
+
+    window.onmouseup = () => isDown = false;
+
+    // --- MOTOR DE EXTRACCIÓN ---
+    async function captureAndCrop(video, time, crop) {
+        return new Promise(res => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d', {alpha: false});
             
-            // Esperamos un instante para que el frame se renderice en el buffer
-            setTimeout(() => {
-                // Dimensiones reales del archivo de video (ej: 1920x1080)
-                const vW = video.videoWidth;
-                const vH = video.videoHeight;
-                
-                let sX, sY, sW, sH;
+            const onSeek = () => {
+                video.removeEventListener('seeked', onSeek);
+                setTimeout(() => {
+                    const vW = video.videoWidth;
+                    const vH = video.videoHeight;
+                    
+                    const sX = crop ? crop.x * vW : 0;
+                    const sY = crop ? crop.y * vH : 0;
+                    const sW = crop ? crop.w * vW : vW;
+                    const sH = crop ? crop.h * vH : vH;
 
-                if (rect && rect.w > 0 && rect.h > 0) {
-                    // Calculamos la posición relativa multiplicada por el tamaño real
-                    sX = rect.x * vW;
-                    sY = rect.y * vH;
-                    sW = rect.w * vW;
-                    sH = rect.h * vH;
+                    canvas.width = sW;
+                    canvas.height = sH;
+                    ctx.drawImage(video, sX, sY, sW, sH, 0, 0, sW, sH);
+                    
+                    canvas.toBlob(b => res({b, t: time}), 'image/jpeg', 0.85);
+                }, 150);
+            };
+            video.addEventListener('seeked', onSeek);
+            video.currentTime = time;
+        });
+    }
 
-                    // Ajuste de seguridad para no exceder los límites del video
-                    sW = Math.min(sW, vW - sX);
-                    sH = Math.min(sH, vH - sY);
-                } else {
-                    // Si no hay recorte, usamos el video completo
-                    sX = 0; sY = 0;
-                    sW = vW; sH = vH;
-                }
-
-                // El canvas debe tener el tamaño del recorte, no del video original
-                canvas.width = sW;
-                canvas.height = sH;
-
-                // Limpiamos el canvas antes de dibujar
-                ctx.fillStyle = "#000";
-                ctx.fillRect(0, 0, sW, sH);
-
-                // Dibujamos la porción seleccionada
-                ctx.drawImage(
-                    video, 
-                    sX, sY, sW, sH, // Fuente (pedazo del video)
-                    0, 0, sW, sH   // Destino (todo el canvas)
-                );
-                
-                canvas.toBlob(blob => resolve({blob, time}), 'image/jpeg', 0.92);
-            }, 100); // Aumentamos ligeramente el delay para estabilidad
-        };
-
-        video.addEventListener('seeked', onSeeked);
-        video.currentTime = time;
-    });
-}
-
-    extractBtn.onclick = async () => {
-        if (!sourceVideo.src) return alert("Carga un video primero");
+    $('run').onclick = async () => {
+        if(!$('v').src) return alert("Por favor, selecciona un video.");
         
-        extractBtn.disabled = true;
-        frameBlobs = [];
-        framePreview.innerHTML = "";
+        const startTime = parseFloat($('t1').value);
+        const endTime = parseFloat($('t2').value);
+        const durationSeconds = endTime - startTime;
         
-        const start = parseFloat(startSlider.value);
-        const end = parseFloat(endSlider.value);
-        const duration = end - start;
-        const totalFrames = Math.floor((duration / 60) * 25);
-        const step = duration / totalFrames;
+        // REGLA: 20 frames por minuto -> 1 frame cada 3 segundos (60 / 20 = 3)
+        const frameInterval = 3.0; 
+        const totalFrames = Math.max(1, Math.floor(durationSeconds / frameInterval));
 
-        addLog(`Iniciando: ${totalFrames} frames detectados...`);
+        $('run').disabled = true;
+        blobs = [];
+        $('pv').innerHTML = "";
+        addLog(`Iniciando extracción: ${totalFrames} frames (1 cada 3s).`);
 
-        // Video oculto para procesamiento
-        const processVideo = document.createElement('video');
-        processVideo.src = sourceVideo.src;
-        processVideo.crossOrigin = "anonymous";
-        await processVideo.play(); processVideo.pause(); // Carga inicial
+        const pVideo = document.createElement('video');
+        pVideo.src = $('v').src;
+        pVideo.muted = true;
+        await pVideo.play(); pVideo.pause();
 
-        for (let i = 0; i < totalFrames; i++) {
-            const targetTime = start + (i * step);
-            const result = await captureFrame(processVideo, targetTime, cropRect);
-            frameBlobs.push(result);
+        for(let i=0; i < totalFrames; i++) {
+            const currentTime = startTime + (i * frameInterval);
+            if(currentTime > endTime) break;
 
-            // Actualizar UI
-            const p = Math.floor(((i + 1) / totalFrames) * 100);
-            progressFill.style.width = p + "%";
-            progressFill.textContent = p + "%";
+            const res = await captureAndCrop(pVideo, currentTime, rect);
+            blobs.push(res);
 
-            if (i % 5 === 0) { // Mostrar algunas miniaturas
+            $('prog').innerText = `Progreso: ${Math.floor(((i+1)/totalFrames)*100)}%`;
+            
+            if(i % 5 === 0) {
                 const img = document.createElement('img');
-                img.src = URL.createObjectURL(result.blob);
-                const div = document.createElement('div');
-                div.className = "frame-item";
-                div.appendChild(img);
-                framePreview.prepend(div);
+                img.src = URL.createObjectURL(res.b);
+                $('pv').prepend(img);
             }
         }
 
-        addLog("✅ Extracción finalizada.");
-        extractBtn.disabled = false;
-        downloadZipBtn.disabled = false;
+        addLog(`✅ ¡Éxito! ${blobs.length} recortes generados.`);
+        $('run').disabled = false;
+        $('zip').disabled = false;
+        $('prog').innerText = "Proceso terminado";
     };
 
-    // --- UTILIDADES ---
-    function addLog(msg) {
-        const entry = document.createElement('div');
-        entry.textContent = `> ${msg}`;
-        logConsole.appendChild(entry);
-        logConsole.scrollTop = logConsole.scrollHeight;
-    }
-
-    function updateTimeLabels() {
-        document.getElementById('startTime').textContent = parseFloat(startSlider.value).toFixed(1) + "s";
-        document.getElementById('endTime').textContent = parseFloat(endSlider.value).toFixed(1) + "s";
-    }
-
-    startSlider.oninput = updateTimeLabels;
-    endSlider.oninput = updateTimeLabels;
-
-    downloadZipBtn.onclick = async () => {
+    $('zip').onclick = async () => {
         const zip = new JSZip();
-        frameBlobs.forEach((f, i) => {
-            zip.file(`frame_${i.toString().padStart(3, '0')}_${f.time.toFixed(2)}s.jpg`, f.blob);
+        blobs.forEach((item, i) => {
+            zip.file(`music_danta_${i.toString().padStart(3, '0')}.jpg`, item.b);
         });
         const content = await zip.generateAsync({type:"blob"});
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(content);
-        link.download = "frames_extraidos.zip";
-        link.click();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(content);
+        a.download = "capturas_20fpm.zip";
+        a.click();
     };
+
+    function addLog(m) {
+        const d = document.createElement('div');
+        d.textContent = `> ${m}`;
+        $('l').appendChild(d);
+        $('l').scrollTop = $('l').scrollHeight;
+    }
 </script>
 </body>
 </html>
