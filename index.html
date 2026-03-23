@@ -140,36 +140,60 @@
 
     // --- EXTRACCIÓN ---
     async function captureFrame(video, time, rect) {
-        return new Promise((resolve) => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d', { alpha: false });
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        
+        const onSeeked = () => {
+            video.removeEventListener('seeked', onSeeked);
             
-            const onSeeked = () => {
-                video.removeEventListener('seeked', onSeeked);
+            // Esperamos un instante para que el frame se renderice en el buffer
+            setTimeout(() => {
+                // Dimensiones reales del archivo de video (ej: 1920x1080)
+                const vW = video.videoWidth;
+                const vH = video.videoHeight;
                 
-                // Asegurar que el frame se pintó (truco para navegadores lentos)
-                setTimeout(() => {
-                    const vW = video.videoWidth;
-                    const vH = video.videoHeight;
-                    
-                    let sX = 0, sY = 0, sW = vW, sH = vH;
-                    if (rect && rect.w > 0) {
-                        sX = rect.x * vW; sY = rect.y * vH;
-                        sW = rect.w * vW; sH = rect.h * vH;
-                    }
+                let sX, sY, sW, sH;
 
-                    canvas.width = sW;
-                    canvas.height = sH;
-                    ctx.drawImage(video, sX, sY, sW, sH, 0, 0, sW, sH);
-                    
-                    canvas.toBlob(blob => resolve({blob, time}), 'image/jpeg', 0.9);
-                }, 60); 
-            };
+                if (rect && rect.w > 0 && rect.h > 0) {
+                    // Calculamos la posición relativa multiplicada por el tamaño real
+                    sX = rect.x * vW;
+                    sY = rect.y * vH;
+                    sW = rect.w * vW;
+                    sH = rect.h * vH;
 
-            video.addEventListener('seeked', onSeeked);
-            video.currentTime = time;
-        });
-    }
+                    // Ajuste de seguridad para no exceder los límites del video
+                    sW = Math.min(sW, vW - sX);
+                    sH = Math.min(sH, vH - sY);
+                } else {
+                    // Si no hay recorte, usamos el video completo
+                    sX = 0; sY = 0;
+                    sW = vW; sH = vH;
+                }
+
+                // El canvas debe tener el tamaño del recorte, no del video original
+                canvas.width = sW;
+                canvas.height = sH;
+
+                // Limpiamos el canvas antes de dibujar
+                ctx.fillStyle = "#000";
+                ctx.fillRect(0, 0, sW, sH);
+
+                // Dibujamos la porción seleccionada
+                ctx.drawImage(
+                    video, 
+                    sX, sY, sW, sH, // Fuente (pedazo del video)
+                    0, 0, sW, sH   // Destino (todo el canvas)
+                );
+                
+                canvas.toBlob(blob => resolve({blob, time}), 'image/jpeg', 0.92);
+            }, 100); // Aumentamos ligeramente el delay para estabilidad
+        };
+
+        video.addEventListener('seeked', onSeeked);
+        video.currentTime = time;
+    });
+}
 
     extractBtn.onclick = async () => {
         if (!sourceVideo.src) return alert("Carga un video primero");
