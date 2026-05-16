@@ -1,252 +1,358 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Video Cropper Pro | Frecuencia Flexible</title>
-    <style>
-        :root { --primary: #6366f1; --bg: #0f172a; --accent: #10b981; }
-        body { background-color: var(--bg); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 20px; }
-        .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; max-width: 1400px; margin: 0 auto; }
+
+<!DOCTYPE html><html lang="es"><head>    
+    <meta charset="UTF-8">    
+    <title>Video Cropper Pro | Multi-Video (Máx 8)</title>    
+    <style>        
+        :root { --primary: #6366f1; --bg: #0f172a; --accent: #10b981; --danger: #ef4444; }        
+        body { background-color: var(--bg); color: white; font-family: system-ui, sans-serif; margin: 0; padding: 20px; }        
+        .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; max-width: 1400px; margin: 0 auto; }                
         
-        .video-container { position: relative; background: #000; border-radius: 12px; overflow: hidden; cursor: crosshair; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        video { width: 100%; height: auto; display: block; }
-        .selection-box { 
-            position: absolute; border: 2px dashed #fff; background: rgba(99, 102, 241, 0.3); 
-            pointer-events: none; display: none; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
-        }
-
-        .controls { background: #1e293b; padding: 25px; border-radius: 12px; display: flex; flex-direction: column; gap: 15px; border: 1px solid #334155; }
-        .time-range { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; }
-        .time-range label { font-size: 12px; color: #94a3b8; display: block; margin-bottom: 5px; }
+        .video-container { position: relative; background: #000; border-radius: 12px; overflow: hidden; cursor: crosshair; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }        
+        video { width: 100%; height: auto; display: block; }        
+        .selection-box {             
+            position: absolute; border: 2px dashed #fff; background: rgba(99, 102, 241, 0.3);             
+            pointer-events: none; display: none; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);        
+        }        
         
-        select, input[type="range"], input[type="file"] { 
-            width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #475569; 
-            background: #0f172a; color: white; box-sizing: border-box; margin-bottom: 12px;
-            font-size: 14px;
-        }
-        input[type="range"] { accent-color: var(--primary); }
+        .controls { background: #1e293b; padding: 25px; border-radius: 12px; display: flex; flex-direction: column; gap: 15px; border: 1px solid #334155; }        
+        .time-range { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; }        
+        .time-range label { font-size: 12px; color: #94a3b8; display: block; margin-bottom: 5px; }                
+        
+        select, input[type="range"], input[type="file"] {             
+            width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #475569;             
+            background: #0f172a; color: white; box-sizing: border-box; margin-bottom: 12px; font-size: 14px;        
+        }        
+        input[type="range"] { accent-color: var(--primary); }        
+        
+        button {             
+            background: var(--primary); color: white; border: none; padding: 14px;             
+            border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;        
+        }        
+        button:hover { filter: brightness(1.1); transform: translateY(-1px); }        
+        button:disabled { background: #475569; cursor: not-allowed; opacity: 0.6; }        
+        
+        /* Lista de Videos Cargados */
+        .video-list { background: #0f172a; border: 1px solid #334155; border-radius: 6px; max-height: 150px; overflow-y: auto; padding: 5px; margin-bottom: 12px; }
+        .video-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; font-size: 12px; border-radius: 4px; margin-bottom: 4px; cursor: pointer; background: #1e293b; }
+        .video-item:hover { background: #334155; }
+        .video-item.active { border-left: 4px solid var(--primary); background: #2e3b52; }
+        .counter-badge { float: right; font-size: 12px; color: #94a3b8; font-weight: normal; }
 
-        button { 
-            background: var(--primary); color: white; border: none; padding: 14px; 
-            border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;
-        }
-        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        button:disabled { background: #475569; cursor: not-allowed; opacity: 0.6; }
-
-        .log { background: #000; font-family: monospace; font-size: 11px; padding: 10px; height: 100px; overflow-y: auto; color: var(--accent); border-radius: 6px; border: 1px solid #334155; }
-        .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 5px; margin-top: 10px; max-height: 200px; overflow-y: auto; }
-        .preview-grid img { width: 100%; border-radius: 4px; border: 1px solid #334155; }
-        .time-display { font-weight: bold; color: var(--accent); float: right; }
-        .info-badge { font-size: 11px; background: #334155; padding: 6px 10px; border-radius: 4px; color: #cbd5e1; border-left: 3px solid var(--primary); }
+        .log { background: #000; font-family: monospace; font-size: 11px; padding: 10px; height: 100px; overflow-y: auto; color: var(--accent); border-radius: 6px; border: 1px solid #334155; }        
+        .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 5px; margin-top: 10px; max-height: 200px; overflow-y: auto; }        
+        .preview-grid img { width: 100%; border-radius: 4px; border: 1px solid #334155; }        
+        .time-display { font-weight: bold; color: var(--accent); float: right; }        
+        .info-badge { font-size: 11px; background: #334155; padding: 6px 10px; border-radius: 4px; color: #cbd5e1; border-left: 3px solid var(--primary); }    
     </style>
 </head>
 <body>
 
-<div class="main-grid">
-    <div class="left-panel">
-        <div class="video-container" id="container">
-            <video id="v" controls crossorigin="anonymous"></video>
-            <div id="box" class="selection-box"></div>
-        </div>
-        <p style="color: #94a3b8; font-size: 13px; margin-top: 10px;">
-            ✂️ <b>Instrucciones:</b> Carga un video, selecciona la frecuencia y arrastra sobre la imagen para definir el área de recorte.
-        </p>
-    </div>
-
-    <div class="controls">
-        <h3 style="margin:0">Configuración</h3>
-        <input type="file" id="f" accept="video/*">
+<div class="main-grid">    
+    <div class="left-panel">        
+        <div class="video-container" id="container">            
+            <video id="v" controls crossorigin="anonymous"></video>            
+            <div id="box" class="selection-box"></div>        
+        </div>        
+        <p style="color: #94a3b8; font-size: 13px; margin-top: 10px;">            
+            ✂️ <b>Instrucciones:</b> Sube hasta 8 videos. Selecciona uno de la lista para previsualizarlo y ajustar los tiempos/recorte (el área y frecuencia configuradas se aplicarán a <b>todos</b> los videos).        
+        </p>    
+    </div>    
+    
+    <div class="controls">        
+        <h3 style="margin:0">Configuración <span id="count" class="counter-badge">(0/8)</span></h3>        
+        <!-- Añadido atributo multiple -->
+        <input type="file" id="f" accept="video/*" multiple>                
         
-        <div class="time-range">
-            <label>Frecuencia de Captura:</label>
-            <select id="fps_select">
-                <option value="20">20 Frames por Minuto (Cada 3s)</option>
-                <option value="6">6 Frames por Minuto (Cada 10s)</option>
-                <option value="3">3 Frames por Minuto (Cada 20s)</option>
-            </select>
+        <label style="font-size: 12px; color: #94a3b8; margin-bottom: -5px;">Videos cargados:</label>
+        <div class="video-list" id="vList">
+            <div style="color: #64748b; padding: 10px; text-align: center; font-size: 12px;">No hay videos cargados</div>
+        </div>
 
-            <label>Tiempo Inicio: <span id="t1_val" class="time-display">0.0s</span></label>
-            <input type="range" id="t1" value="0" step="0.1">
+        <div class="time-range">            
+            <label>Frecuencia de Captura:</label>            
+            <select id="fps_select">                
+                <option value="20">20 Frames por Minuto (Cada 3s)</option>                
+                <option value="6">6 Frames por Minuto (Cada 10s)</option>                
+                <option value="3">3 Frames por Minuto (Cada 20s)</option>            
+            </select>            
             
-            <label>Tiempo Fin: <span id="t2_val" class="time-display">0.0s</span></label>
-            <input type="range" id="t2" value="0" step="0.1">
-        </div>
-
-        <div class="info-badge" id="frameInfo">Selecciona un video para calcular...</div>
-
-        <button id="run">🚀 INICIAR PROCESO</button>
-        <button id="zip" disabled style="background:#0ea5e9">📦 DESCARGAR ZIP</button>
+            <label>Tiempo Inicio (Video Activo): <span id="t1_val" class="time-display">0.0s</span></label>            
+            <input type="range" id="t1" value="0" step="0.1">                                    
+            
+            <label>Tiempo Fin (Video Activo): <span id="t2_val" class="time-display">0.0s</span></label>            
+            <input type="range" id="t2" value="0" step="0.1">        
+        </div>        
         
-        <div id="prog" style="font-size:14px; text-align:center; color: var(--accent); font-weight: bold;">Esperando archivo...</div>
-        <div class="log" id="l"></div>
-        <div class="preview-grid" id="pv"></div>
+        <div class="info-badge" id="frameInfo">Selecciona videos para calcular...</div>        
+        <button id="run">🚀 INICIAR PROCESAMIENTO EN LOTE</button>        
+        <button id="zip" disabled style="background:#0ea5e9">📦 DESCARGAR ZIP BUNDLE</button>                
+        
+        <div id="prog" style="font-size:14px; text-align:center; color: var(--accent); font-weight: bold;">Esperando archivos...</div>        
+        <div class="log" id="l"></div>        
+        <div class="preview-grid" id="pv"></div>    
     </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script>
-    const $ = id => document.getElementById(id);
-    let rect = null, isDown = false, startPos = {x:0, y:0}, blobs = [];
+<script>    
+    const $ = id => document.getElementById(id);    
+    let rect = null, isDown = false, startPos = {x:0, y:0};
+    
+    // Array para almacenar la estructura de los videos cargados
+    let loadedVideos = []; 
+    let activeIndex = null;
 
-    // --- CARGA Y CONFIGURACIÓN ---
-    $('f').onchange = e => {
-        const file = e.target.files[0];
-        if(file) {
-            $('v').src = URL.createObjectURL(file);
-            addLog("Video cargado: " + file.name);
-        }
-    };
-
-    $('v').onloadedmetadata = () => {
-        const dur = $('v').duration;
-        $('t1').max = dur;
-        $('t2').max = dur;
-        $('t2').value = dur;
-        updateLabels();
-        $('prog').innerText = "Listo para iniciar";
-    };
-
-    const updateLabels = () => {
-        const start = parseFloat($('t1').value);
-        const end = parseFloat($('t2').value);
-        const fpm = parseInt($('fps_select').value);
+    // --- CARGA Y CONFIGURACIÓN MULTI-VIDEO ---    
+    $('f').onchange = e => {        
+        const files = Array.from(e.target.files);
         
-        $('t1_val').innerText = start.toFixed(1) + "s";
-        $('t2_val').innerText = end.toFixed(1) + "s";
-        
-        if(start > end) {
-            $('t2').value = start;
-            $('t2_val').innerText = start.toFixed(1) + "s";
+        if(files.length > 8) {
+            alert("Por seguridad y rendimiento, el límite máximo es de 8 videos simultáneos.");
+            files.splice(8); // Conserva solo los primeros 8
         }
 
-        const durationSeconds = parseFloat($('t2').value) - start;
-        const interval = 60 / fpm;
-        const estimated = Math.max(1, Math.floor(durationSeconds / interval));
-        
-        $('frameInfo').innerText = `Frecuencia: ${fpm} fpm | Intervalo: ${interval}s | Total: ~${estimated} capturas`;
-    };
-
-    $('t1').oninput = updateLabels;
-    $('t2').oninput = updateLabels;
-    $('fps_select').onchange = updateLabels;
-
-    // --- SELECCIÓN DE ÁREA ---
-    $('container').onmousedown = e => {
-        isDown = true;
-        const b = $('container').getBoundingClientRect();
-        startPos = { x: (e.clientX - b.left) / b.width, y: (e.clientY - b.top) / b.height };
-        rect = { x: startPos.x, y: startPos.y, w: 0, h: 0 };
-    };
-
-    window.onmousemove = e => {
-        if(!isDown) return;
-        const b = $('container').getBoundingClientRect();
-        let curX = (e.clientX - b.left) / b.width;
-        let curY = (e.clientY - b.top) / b.height;
-
-        rect.x = Math.max(0, Math.min(startPos.x, curX));
-        rect.y = Math.max(0, Math.min(startPos.y, curY));
-        rect.w = Math.min(1 - rect.x, Math.abs(curX - startPos.x));
-        rect.h = Math.min(1 - rect.y, Math.abs(curY - startPos.y));
-
-        $('box').style.display = 'block';
-        $('box').style.left = (rect.x * 100) + '%';
-        $('box').style.top = (rect.y * 100) + '%';
-        $('box').style.width = (rect.w * 100) + '%';
-        $('box').style.height = (rect.h * 100) + '%';
-    };
-
-    window.onmouseup = () => isDown = false;
-
-    // --- PROCESAMIENTO ---
-    async function captureAndCrop(video, time, crop) {
-        return new Promise(res => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d', {alpha: false});
+        if(files.length > 0) {
+            loadedVideos = files.map(file => ({
+                file: file,
+                src: URL.createObjectURL(file),
+                name: file.name,
+                duration: 0,
+                t1: 0,
+                t2: 0
+            }));
             
-            const onSeek = () => {
-                video.removeEventListener('seeked', onSeek);
-                setTimeout(() => {
-                    const vW = video.videoWidth;
-                    const vH = video.videoHeight;
-                    const sX = crop ? crop.x * vW : 0;
-                    const sY = crop ? crop.y * vH : 0;
-                    const sW = crop ? crop.w * vW : vW;
-                    const sH = crop ? crop.h * vH : vH;
+            renderVideoList();
+            setActiveVideo(0); // Activar el primero por defecto
+            addLog(`${loadedVideos.length} video(s) cargado(s).`);
+        }    
+    };    
 
-                    canvas.width = sW;
-                    canvas.height = sH;
-                    ctx.drawImage(video, sX, sY, sW, sH, 0, 0, sW, sH);
-                    canvas.toBlob(b => res({b, t: time}), 'image/jpeg', 0.85);
-                }, 150);
-            };
-            video.addEventListener('seeked', onSeek);
-            video.currentTime = time;
+    function renderVideoList() {
+        const listContainer = $('vList');
+        listContainer.innerHTML = "";
+        $('count').innerText = `(${loadedVideos.length}/8)`;
+
+        loadedVideos.forEach((vid, index) => {
+            const item = document.createElement('div');
+            item.className = `video-item ${index === activeIndex ? 'active' : ''}`;
+            item.innerHTML = `
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80%;">${index + 1}. ${vid.name}</span>
+                <span style="color:#94a3b8" id="dur_badge_${index}">${vid.duration ? vid.duration.toFixed(1)+'s' : '...'}</span>
+            `;
+            item.onclick = () => setActiveVideo(index);
+            listContainer.appendChild(item);
         });
     }
 
-    $('run').onclick = async () => {
-        if(!$('v').src) return alert("Sube un video primero.");
+    function setActiveVideo(index) {
+        if(index < 0 || index >= loadedVideos.length) return;
+        activeIndex = index;
         
-        const startTime = parseFloat($('t1').value);
-        const endTime = parseFloat($('t2').value);
-        const fpm = parseInt($('fps_select').value);
-        const interval = 60 / fpm;
-        const durationSeconds = endTime - startTime;
-        const totalFrames = Math.max(1, Math.floor(durationSeconds / interval));
+        // Remover clases activas previas y asignar a la nueva
+        const items = document.querySelectorAll('.video-item');
+        items.forEach((item, i) => item.classList.toggle('active', i === index));
 
-        $('run').disabled = true;
-        $('zip').disabled = true;
-        blobs = [];
-        $('pv').innerHTML = "";
-        addLog(`Extrayendo ${totalFrames} frames a ${fpm} fpm...`);
+        // Asignar fuente al elemento de video principal
+        $('v').src = loadedVideos[activeIndex].src;
+    }
 
-        const pVideo = document.createElement('video');
-        pVideo.src = $('v').src;
-        pVideo.muted = true;
-        await pVideo.play(); pVideo.pause();
-
-        for(let i=0; i < totalFrames; i++) {
-            const currentTime = startTime + (i * interval);
-            if(currentTime > endTime) break;
-
-            const res = await captureAndCrop(pVideo, currentTime, rect);
-            blobs.push(res);
-
-            $('prog').innerText = `Progreso: ${Math.floor(((i+1)/totalFrames)*100)}%`;
-            
-            // Mostrar previsualización
-            if(i % 2 === 0 || totalFrames < 10) {
-                const img = document.createElement('img');
-                img.src = URL.createObjectURL(res.b);
-                $('pv').prepend(img);
-            }
+    $('v').onloadedmetadata = () => {        
+        const dur = $('v').duration;        
+        loadedVideos[activeIndex].duration = dur;
+        
+        // Inicializar tiempos si es la primera vez que se procesa el metadato
+        if(loadedVideos[activeIndex].t2 === 0) {
+            loadedVideos[activeIndex].t2 = dur;
         }
 
-        addLog(`✅ Finalizado: ${blobs.length} capturas listas.`);
-        $('run').disabled = false;
-        $('zip').disabled = false;
-        $('prog').innerText = "Proceso completo";
-    };
+        // Actualizar badges de duración en la lista
+        const badge = $(`dur_badge_${activeIndex}`);
+        if(badge) badge.innerText = dur.toFixed(1) + "s";
 
-    $('zip').onclick = async () => {
-        const zip = new JSZip();
-        const fpm = $('fps_select').value;
-        blobs.forEach((item, i) => {
-            zip.file(`shot_${fpm}fpm_${i.toString().padStart(3, '0')}.jpg`, item.b);
-        });
-        const content = await zip.generateAsync({type:"blob"});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(content);
-        a.download = `capturas_recortadas_${fpm}fpm.zip`;
-        a.click();
-    };
+        // Mapear valores al UI
+        $('t1').max = dur;        
+        $('t2').max = dur;        
+        $('t1').value = loadedVideos[activeIndex].t1;
+        $('t2').value = loadedVideos[activeIndex].t2;
+        
+        updateLabels();        
+        $('prog').innerText = "Configuración actualizada";    
+    };    
 
-    function addLog(m) {
-        const d = document.createElement('div');
-        d.textContent = `> ${m}`;
-        $('l').appendChild(d);
-        $('l').scrollTop = $('l').scrollHeight;
+    const updateLabels = () => {        
+        if(activeIndex === null || loadedVideos.length === 0) return;
+
+        const start = parseFloat($('t1').value);        
+        const end = parseFloat($('t2').value);        
+        const fpm = parseInt($('fps_select').value);                
+        
+        // Guardar valores en el objeto del video activo
+        loadedVideos[activeIndex].t1 = start;
+        loadedVideos[activeIndex].t2 = end;
+
+        $('t1_val').innerText = start.toFixed(1) + "s";        
+        $('t2_val').innerText = end.toFixed(1) + "s";                
+        
+        if(start > end) {            
+            $('t2').value = start;            
+            $('t2_val').innerText = start.toFixed(1) + "s";        
+            loadedVideos[activeIndex].t2 = start;
+        }        
+
+        // Calcular global estimado basándose en el video seleccionado
+        const durationSeconds = parseFloat($('t2').value) - start;        
+        const interval = 60 / fpm;        
+        const estimatedPerVideo = Math.max(1, Math.floor(durationSeconds / interval));                
+        
+        $('frameInfo').innerText = `Frecuencia: ${fpm} fpm | Total estimado: ~${estimatedPerVideo * loadedVideos.length} capturas (${loadedVideos.length} videos)`;    
+    };    
+
+    $('t1').oninput = updateLabels;    
+    $('t2').oninput = updateLabels;    
+    $('fps_select').onchange = updateLabels;    
+
+    // --- SELECCIÓN DE ÁREA ---    
+    $('container').onmousedown = e => {        
+        isDown = true;        
+        const b = $('container').getBoundingClientRect();        
+        startPos = { x: (e.clientX - b.left) / b.width, y: (e.clientY - b.top) / b.height };        
+        rect = { x: startPos.x, y: startPos.y, w: 0, h: 0 };    
+    };    
+
+    window.onmousemove = e => {        
+        if(!isDown) return;        
+        const b = $('container').getBoundingClientRect();        
+        let curX = (e.clientX - b.left) / b.width;        
+        let curY = (e.clientY - b.top) / b.height;        
+        
+        rect.x = Math.max(0, Math.min(startPos.x, curX));        
+        rect.y = Math.max(0, Math.min(startPos.y, curY));        
+        rect.w = Math.min(1 - rect.x, Math.abs(curX - startPos.x));        
+        rect.h = Math.min(1 - rect.y, Math.abs(curY - startPos.y));        
+        
+        $('box').style.display = 'block';        
+        $('box').style.left = (rect.x * 100) + '%';        
+        $('box').style.top = (rect.y * 100) + '%';        
+        $('box').style.width = (rect.w * 100) + '%';        
+        $('box').style.height = (rect.h * 100) + '%';    
+    };    
+
+    window.onmouseup = () => isDown = false;    
+
+    // --- PROCESAMIENTO ---    
+    async function captureAndCrop(video, time, crop) {        
+        return new Promise(res => {            
+            const canvas = document.createElement('canvas');            
+            const ctx = canvas.getContext('2d', {alpha: false});                        
+            
+            const onSeek = () => {                
+                video.removeEventListener('seeked', onSeek);                
+                setTimeout(() => {                    
+                    const vW = video.videoWidth;                    
+                    const vH = video.videoHeight;                    
+                    const sX = crop ? crop.x * vW : 0;                    
+                    const sY = crop ? crop.y * vH : 0;                    
+                    const sW = crop ? crop.w * vW : vW;                    
+                    const sH = crop ? crop.h * vH : vH;                    
+                    
+                    canvas.width = sW;                    
+                    canvas.height = sH;                    
+                    ctx.drawImage(video, sX, sY, sW, sH, 0, 0, sW, sH);                    
+                    canvas.toBlob(b => res({b, t: time}), 'image/jpeg', 0.85);                
+                }, 150);            
+            };            
+            video.addEventListener('seeked', onSeek);            
+            video.currentTime = time;        
+        });    
+    }    
+
+    $('run').onclick = async () => {        
+        if(loadedVideos.length === 0) return alert("Sube al menos un video.");                
+        
+        const fpm = parseInt($('fps_select').value);        
+        const interval = 60 / fpm;        
+        
+        $('run').disabled = true;        
+        $('zip').disabled = true;        
+        
+        // Almacenaremos todos los elementos ordenados por video de origen
+        window.allBlobsBundle = [];         
+        $('pv').innerHTML = "";        
+        addLog(`Iniciando procesamiento por lotes para ${loadedVideos.length} videos...`);        
+
+        const pVideo = document.createElement('video');        
+        pVideo.muted = true;
+
+        // Bucle principal para iterar secuencialmente sobre cada video
+        for(let vIdx = 0; vIdx < loadedVideos.length; vIdx++) {
+            const currentVid = loadedVideos[vIdx];
+            addLog(`Procesando video [${vIdx + 1}/${loadedVideos.length}]: ${currentVid.name}`);
+            
+            pVideo.src = currentVid.src;            
+            await new Promise(r => pVideo.onloadedmetadata = r);
+            await pVideo.play(); pVideo.pause();
+
+            // Si los tiempos no fueron personalizados individualmente, se asume el total del video actual
+            const startTime = currentVid.t1;
+            const endTime = currentVid.t2 || pVideo.duration;
+            const durationSeconds = endTime - startTime;        
+            const totalFrames = Math.max(1, Math.floor(durationSeconds / interval));
+
+            for(let i=0; i < totalFrames; i++) {            
+                const currentTime = startTime + (i * interval);            
+                if(currentTime > endTime) break;            
+                
+                const res = await captureAndCrop(pVideo, currentTime, rect);            
+                
+                // Guardamos el blob junto con metadatos del video origen
+                window.allBlobsBundle.push({
+                    blob: res.b,
+                    videoName: currentVid.name.replace(/\.[^/.]+$/, ""), // quitar extensión
+                    frameIndex: i
+                });            
+                
+                $('prog').innerText = `Video ${vIdx + 1}/${loadedVideos.length} - Frame: ${i+1}/${totalFrames}`;                        
+                
+                // Previsualización (Muestra una de cada pocas imágenes procesadas)
+                if(i % 3 === 0) {                    
+                    const img = document.createElement('img');                    
+                    img.src = URL.createObjectURL(res.b);                    
+                    $('pv').prepend(img);                
+                }            
+            }
+        }        
+
+        addLog(`✅ Lote completo. Total de capturas generadas: ${window.allBlobsBundle.length}`);        
+        $('run').disabled = false;        
+        $('zip').disabled = false;        
+        $('prog').innerText = "¡Todo procesado con éxito!";    
+    };    
+
+    $('zip').onclick = async () => {        
+        if(!window.allBlobsBundle || window.allBlobsBundle.length === 0) return;
+        
+        const zip = new JSZip();        
+        const fpm = $('fps_select').value;        
+        
+        window.allBlobsBundle.forEach((item) => {            
+            // Los archivos se organizan por carpetas internas usando el nombre del video original
+            zip.file(`${item.videoName}/shot_${fpm}fpm_${item.frameIndex.toString().padStart(3, '0')}.jpg`, item.blob);        
+        });        
+        
+        $('prog').innerText = "Generando archivo ZIP...";
+        const content = await zip.generateAsync({type:"blob"});        
+        const a = document.createElement('a');        
+        a.href = URL.createObjectURL(content);        
+        a.download = `bundle_capturas_${fpm}fpm.zip`;        
+        a.click();    
+        $('prog').innerText = "ZIP descargado.";
+    };    
+
+    function addLog(m) {        
+        const d = document.createElement('div');        
+        d.textContent = `> ${m}`;        
+        $('l').appendChild(d);        
+        $('l').scrollTop = $('l').scrollHeight;    
     }
 </script>
 </body>
