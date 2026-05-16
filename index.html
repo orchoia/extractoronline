@@ -328,25 +328,25 @@
         $('prog').innerText = "¡Todo procesado con éxito!";    
     };    
 
-    $('zip').onclick = async () => {        
+   $('zip').onclick = async () => {
         if(!window.allBlobsBundle || window.allBlobsBundle.length === 0) return;
-        
-        const zip = new JSZip();        
-        const fpm = $('fps_select').value;        
-        
-        window.allBlobsBundle.forEach((item) => {            
-            // Los archivos se organizan por carpetas internas usando el nombre del video original
-            zip.file(`${item.videoName}/shot_${fpm}fpm_${item.frameIndex.toString().padStart(3, '0')}.jpg`, item.blob);        
-        });        
-        
+        const zip = new JSZip();
+        const fpm = $('fps_select').value;
+                
+        window.allBlobsBundle.forEach((item) => {
+            // CAMBIO AQUÍ: Se eliminó "${item.videoName}/" para que no cree carpetas. 
+            // Se incluye el nombre del video en el archivo para evitar duplicados en la raíz.
+            zip.file(`${item.videoName}_shot_${fpm}fpm_${item.frameIndex.toString().padStart(3, '0')}.jpg`, item.blob);
+        });
+                
         $('prog').innerText = "Generando archivo ZIP...";
-        const content = await zip.generateAsync({type:"blob"});        
-        const a = document.createElement('a');        
-        a.href = URL.createObjectURL(content);        
-        a.download = `bundle_capturas_${fpm}fpm.zip`;        
-        a.click();    
+        const content = await zip.generateAsync({type:"blob"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(content);
+        a.download = `bundle_capturas_${fpm}fpm.zip`;
+        a.click();
         $('prog').innerText = "ZIP descargado.";
-    };    
+    };   
 
     function addLog(m) {        
         const d = document.createElement('div');        
